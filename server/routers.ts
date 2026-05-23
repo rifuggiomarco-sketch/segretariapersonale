@@ -10,6 +10,7 @@ import { googleRouter } from "./google-oauth";
 import { generateMockBriefing } from "./mock-data";
 import { parseNote, formatParsedDateTime, isDateInFuture } from "./note-parser";
 import { eq, desc } from "drizzle-orm";
+import { extractShiftsFromImage, convertShiftsToDatabase } from "./shift-extractor";
 
 export const appRouter = router({
   system: systemRouter,
@@ -224,6 +225,40 @@ export const appRouter = router({
       }),
   }),
 
+  
+  shifts: router({
+    getUpcoming: protectedProcedure
+      .input(z.object({ weeksAhead: z.number().default(2) }).optional())
+      .query(async ({ ctx, input }) => {
+        return await db.getUpcomingWeeks(ctx.user.id, input?.weeksAhead || 2);
+      }),
+    getWeek: protectedProcedure
+      .input(z.object({ weekStartDate: z.date() }))
+      .query(async ({ ctx, input }) => {
+        return await db.getWeeklyShifts(ctx.user.id, input.weekStartDate);
+      }),
+    upload: protectedProcedure
+      .input(z.object({ imageUrl: z.string(), weekStartDate: z.date() }))
+      .mutation(async ({ ctx, input }) => {
+        const userId = ctx.user.id;
+        try {
+          // Extract shifts from image using AI
+          const extractedShifts = await extractShiftsFromImage(input.imageUrl);
+          if (extractedShifts.length === 0) {
+            throw new Error("No shifts could be extracted from the image.");
+          }
+          
+          // Convert to database format and save
+          const dbShifts = convertShiftsToDatabase(extractedShifts, userId, input.weekStartDate);
+          await db.saveWeeklyShifts(userId, dbShifts);
+          
+          return { success: true, count: extractedShifts.length };
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Unknown error";
+          throw new Error(`Failed to process schedule image: ${message}`);
+        }
+      }),
+  }),
   google: googleRouter,
 });
 

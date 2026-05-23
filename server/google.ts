@@ -69,7 +69,7 @@ async function getAuthClientForUser(userId: number): Promise<OAuth2Client | null
   client.setCredentials({
     access_token: tokenRow.accessToken,
     refresh_token: tokenRow.refreshToken,
-    expiry_date: tokenRow.expiryDate ? Number(tokenRow.expiryDate) : undefined,
+    expiry_date: tokenRow.expiresAt ? new Date(tokenRow.expiresAt).getTime() : undefined,
   });
 
   // Rinnova automaticamente il token se scaduto
@@ -80,7 +80,7 @@ async function getAuthClientForUser(userId: number): Promise<OAuth2Client | null
       .update(googleTokens)
       .set({
         accessToken: tokens.access_token ?? tokenRow.accessToken,
-        expiryDate: tokens.expiry_date ? String(tokens.expiry_date) : tokenRow.expiryDate,
+        expiresAt: tokens.expiry_date ? new Date(tokens.expiry_date) : tokenRow.expiresAt,
       })
       .where(eq(googleTokens.userId, userId));
   });
@@ -180,14 +180,14 @@ router.get("/callback", async (req, res) => {
         userId,
         accessToken: tokens.access_token ?? "",
         refreshToken: tokens.refresh_token ?? null,
-        expiryDate: tokens.expiry_date ? String(tokens.expiry_date) : null,
+        expiresAt: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
       })
       .onDuplicateKeyUpdate({
         set: {
           accessToken: tokens.access_token ?? "",
           // Solo aggiorna refreshToken se Google ne ha restituito uno nuovo
           ...(tokens.refresh_token ? { refreshToken: tokens.refresh_token } : {}),
-          expiryDate: tokens.expiry_date ? String(tokens.expiry_date) : null,
+          expiresAt: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
         },
       });
 
@@ -381,8 +381,8 @@ export async function briefingProxyHandler(
     });
 
     const text = message.content
-      .filter(b => b.type === "text")
-      .map(b => (b as any).text)
+      .filter((b: any) => b.type === "text")
+      .map((b: any) => b.text)
       .join("");
 
     res.json({ text });
@@ -390,4 +390,111 @@ export async function briefingProxyHandler(
     console.error("[Briefing Proxy]", e);
     res.status(500).json({ error: e.message || "Errore generazione briefing" });
   }
+}
+
+// --- Added missing exported functions ---
+export function getAuthUrl() {
+  const client = createOAuthClient();
+  return client.generateAuthUrl({
+    access_type: "offline",
+    prompt: "consent",
+    scope: GOOGLE_SCOPES,
+  });
+}
+
+export async function getTokenFromCode(code: string) {
+  const client = createOAuthClient();
+  const { tokens } = await client.getToken(code);
+  return tokens;
+}
+
+export async function fetchRecentEmails(accessToken: string, days: number = 7) {
+  const client = createOAuthClient();
+  client.setCredentials({ access_token: accessToken });
+  const gmailApi = google.gmail({ version: "v1", auth: client });
+  
+  const sevenDaysAgo = Math.floor((Date.now() - days * 24 * 60 * 60 * 1000) / 1000);
+  const query = `(is:unread OR is:important) after:${sevenDaysAgo} -in:spam -in:trash`;
+  
+  const listResponse = await gmailApi.users.messages.list({
+    userId: "me",
+    q: query,
+    maxResults: 15,
+  });
+  
+  const messages = listResponse.data.messages || [];
+  if (messages.length === 0) return [];
+  
+  const emails = await Promise.all(
+    messages.map(async (msg) => {
+      const detail = await gmailApi.users.messages.get({
+        userId: "me",
+        id: msg.id!,
+        format: "metadata",
+        metadataHeaders: ["Subject", "From", "Date"],
+      });
+      
+      const headers = detail.data.payload?.headers || [];
+      const subject = headers.find((h: any) => h.name === "Subject")?.value || "(senza oggetto)";
+      const from = headers.find((h: any) => h.name === "From")?.value || "Mittente sconosciuto";
+      
+      return {
+        gmailId: msg.id!,
+        from,
+        subject,
+        snippet: detail.data.snippet || "",
+        body: detail.data.snippet || "",
+        receivedAt: new Date(),
+      };
+    })
+  );
+  
+  return emails;
+}
+
+export async function fetchUpcomingEvents(accessToken: string, days: number = 7) {
+  const client = createOAuthClient();
+  client.setCredentials({ access_token: accessToken });
+  const calendarApi = google.calendar({ version: "v3", auth: client });
+  
+  const timeMin = new Date().toISOString();
+  const timeMaxDate = new Date();
+  timeMaxDate.setDate(timeMaxDate.getDate() + days);
+  const timeMax = timeMaxDate.toISOString();
+  
+  const response = await calendarApi.events.list({
+    calendarId: "primary",
+    timeMin,
+    timeMax,
+    maxResults: 20,
+    singleEvents: true,
+    orderBy: "startTime",
+  });
+  
+  const events = response.data.items || [];
+  return events.map((event: any) => ({
+    googleEventId: event.id!,
+    title: event.summary || "Senza titolo",
+    description: event.description || "",
+    startTime: new Date(event.start?.dateTime || event.start?.date || new Date()),
+    endTime: new Date(event.end?.dateTime || event.end?.date || new Date()),
+    location: event.location || "",
+  }));
+}
+
+export async function createCalendarEvent(accessToken: string, eventData: { title: string, description: string, startTime: Date, endTime: Date }) {
+  const client = createOAuthClient();
+  client.setCredentials({ access_token: accessToken });
+  const calendarApi = google.calendar({ version: "v3", auth: client });
+  
+  await calendarApi.events.insert({
+    calendarId: "primary",
+    requestBody: {
+      summary: eventData.title,
+      description: eventData.description,
+      start: { dateTime: eventData.startTime.toISOString() },
+      end: { dateTime: eventData.endTime.toISOString() },
+    },
+  });
+  return true;
 }
