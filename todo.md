@@ -84,10 +84,10 @@
 - [ ] Testare sincronizzazione Gmail e Google Calendar
 
 ## Weekly Shifts Feature
-- [ ] Completare integrazione ShiftsSection nel Dashboard
-- [ ] Aggiungere procedure tRPC per upload file e estrazione turni
-- [ ] Implementare zoom settimana singola
-- [ ] Testare estrazione turni da Excel/PDF/Screenshot
+- [x] Completare integrazione ShiftsSection nel Dashboard
+- [x] Aggiungere procedure tRPC per upload file e estrazione turni
+- [x] Implementare zoom settimana singola
+- [x] Testare estrazione turni da Excel/PDF/Screenshot
 
 ## Stripe & Freemium Model
 - [ ] Implementare pagina pricing con piani Free/Premium
