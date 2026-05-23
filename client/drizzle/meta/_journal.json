@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1778968625697,
+      "tag": "0000_spotty_firebird",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1778968707713,
+      "tag": "0001_legal_mulholland_black",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1779016500729,
+      "tag": "0002_known_the_enforcers",
+      "breakpoints": true
+    }
+  ]
+}
