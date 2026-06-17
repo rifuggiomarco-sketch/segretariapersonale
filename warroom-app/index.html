@@ -479,10 +479,9 @@
           <label>ORE FAMIGLIA (settimanali)</label>
           <input type="number" id="oreFamiglia" value="15" min="0" max="40">
         </div>
-        <div class="form-group" id="serverUrlGroup" style="display:none;">
-          <label>URL SERVER (solo APK)</label>
-          <input type="url" id="serverUrlInput" placeholder="https://tuo-sito.manus.space" autocomplete="off">
-          <small style="color:#888;font-size:11px;letter-spacing:0;">L'URL del tuo server Manus (senza / finale)</small>
+        <div class="form-group" id="apiKeyGroup" style="display:none;">
+          <label>ANTHROPIC API KEY (solo APK)</label>
+          <input type="password" id="anthropicKey" placeholder="sk-ant-..." autocomplete="off">
         </div>
         <button class="btn btn-primary" onclick="saveSettings()">Salva Impostazioni</button>
       </div>
@@ -552,16 +551,31 @@ function save() {
 }
 
 // ============================================================
-// LLM — proxy server configurabile (APK) oppure relativo (browser)
+// LLM — API diretta Anthropic (APK nativo) oppure proxy server (browser)
 // ============================================================
 async function callLLM(messages, maxTokens) {
   const isNative = !!(window.Capacitor?.isNativePlatform?.());
-  const serverUrl = (localStorage.getItem('cc_server_url') || '').replace(/\/$/, '');
-  if (isNative && !serverUrl) {
-    throw new Error('Imposta l\'URL del server nelle Impostazioni (tab IMPOSTA)');
+  if (isNative) {
+    const apiKey = localStorage.getItem('cc_anthropic_key') || '';
+    if (!apiKey) throw new Error('Imposta la tua Anthropic API Key nelle Impostazioni');
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', messages, max_tokens: maxTokens || 1000 })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    return data.content?.map(c => c.text || '').join('') || '';
   }
-  const endpoint = isNative ? `${serverUrl}/api/warroom/llm` : '/api/warroom/llm';
-  const res = await fetch(endpoint, {
+  const res = await fetch('/api/warroom/llm', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ messages, max_tokens: maxTokens || 1000 })
@@ -934,8 +948,8 @@ function saveSettings() {
   settings.oreGiorno = parseInt(document.getElementById('oreGiorno').value)||8;
   settings.oreFamiglia = parseInt(document.getElementById('oreFamiglia').value)||0;
   settings.giorni = [1,2,3,4,5,6,7].filter((_,i)=>document.getElementById('d'+(i+1)).checked);
-  const u = document.getElementById('serverUrlInput').value.trim();
-  if (u) localStorage.setItem('cc_server_url', u);
+  const k = document.getElementById('anthropicKey').value.trim();
+  if (k) localStorage.setItem('cc_anthropic_key', k);
   save(); alert('Salvato!'); renderCapacita();
 }
 
@@ -962,9 +976,10 @@ function renderCapacita() {
   document.getElementById('oreFamiglia').value = settings.oreFamiglia;
   [1,2,3,4,5,6,7].forEach((d,i)=>{ document.getElementById('d'+(i+1)).checked = settings.giorni.includes(d); });
   const isNative = !!(window.Capacitor?.isNativePlatform?.());
-  document.getElementById('serverUrlGroup').style.display = isNative ? 'block' : 'none';
+  document.getElementById('apiKeyGroup').style.display = isNative ? 'block' : 'none';
   if (isNative) {
-    document.getElementById('serverUrlInput').value = localStorage.getItem('cc_server_url') || '';
+    const k = localStorage.getItem('cc_anthropic_key') || '';
+    document.getElementById('anthropicKey').value = k ? '••••••••' : '';
   }
 }
 
