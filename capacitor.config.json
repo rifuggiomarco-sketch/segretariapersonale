@@ -1,0 +1,13 @@
+{
+  "appId": "it.rifuggiomarco.warroom",
+  "appName": "WAR ROOM",
+  "webDir": "warroom-app",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "buildOptions": {
+      "releaseType": "APK"
+    }
+  }
+}

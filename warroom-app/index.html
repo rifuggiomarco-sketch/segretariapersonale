@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WAR ROOM — Gestione Progetti</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: #2a2a3a;
+    --accent: #e8ff3c;
+    --accent2: #ff4c6e;
+    --accent3: #3caaff;
+    --text: #f0f0f5;
+    --muted: #6a6a8a;
+    --green: #3cffa0;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Syne',sans-serif; min-height:100vh; }
+
+  /* HEADER */
+  header {
+    border-bottom:1px solid var(--border);
+    padding:10px 16px;
+    display:grid;
+    grid-template-columns:1fr auto 1fr;
+    align-items:center;
+    gap:8px;
+    background:rgba(10,10,15,0.92);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    position:sticky; top:0; z-index:99;
+  }
+  @media(min-width:768px){ header { padding:12px 28px; gap:20px; } }
+
+  /* WAR ROOM LOGO */
+  .war-logo {
+    display:flex; align-items:center; gap:10px;
+  }
+  .war-logo-icon {
+    position:relative; width:36px; height:36px; flex-shrink:0;
+  }
+  .war-logo-icon svg { width:36px; height:36px; }
+  .war-logo-text { display:flex; flex-direction:column; line-height:1; }
+  .war-logo-top {
+    font-family:'Space Mono',monospace;
+    font-size:7px; letter-spacing:4px; color:var(--accent2);
+    text-transform:uppercase; opacity:0.9;
+  }
+  .war-logo-main {
+    font-family:'Syne',sans-serif;
+    font-size:20px; font-weight:800;
+    letter-spacing:-0.5px;
+    background:linear-gradient(90deg, #fff 0%, var(--accent) 60%, var(--accent2) 100%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    background-clip:text;
+    line-height:1.1;
+  }
+  .war-logo-sub {
+    font-family:'Space Mono',monospace;
+    font-size:6px; letter-spacing:3px; color:var(--muted);
+    text-transform:uppercase; margin-top:2px;
+  }
+  @media(min-width:768px){
+    .war-logo-icon { width:44px; height:44px; }
+    .war-logo-icon svg { width:44px; height:44px; }
+    .war-logo-main { font-size:26px; }
+    .war-logo-top { font-size:8px; }
+    .war-logo-sub { font-size:7px; }
+  }
+
+  /* CENTER: date + clock */
+  .header-center {
+    display:flex; flex-direction:column; align-items:center; gap:1px;
+    justify-self:center;
+  }
+  .header-date {
+    font-family:'Space Mono',monospace;
+    font-size:9px; letter-spacing:2px;
+    color:var(--accent3); text-transform:uppercase;
+  }
+  .header-clock {
+    font-family:'Space Mono',monospace;
+    font-size:18px; font-weight:700;
+    color:var(--accent);
+    letter-spacing:2px;
+    text-shadow: 0 0 12px rgba(232,255,60,0.4);
+  }
+  @media(min-width:768px){
+    .header-date { font-size:11px; letter-spacing:3px; }
+    .header-clock { font-size:26px; }
+  }
+
+  /* RIGHT: weather widget */
+  .header-weather {
+    display:flex; flex-direction:column; align-items:flex-end; gap:2px;
+    justify-self:end;
+  }
+  .weather-main {
+    display:flex; align-items:center; gap:6px;
+  }
+  .weather-icon { font-size:20px; line-height:1; }
+  .weather-temp {
+    font-family:'Space Mono',monospace;
+    font-size:18px; font-weight:700; color:var(--text);
+  }
+  .weather-desc {
+    font-family:'Space Mono',monospace;
+    font-size:8px; letter-spacing:1px; color:var(--muted);
+    text-align:right; text-transform:uppercase;
+  }
+  .weather-city {
+    font-family:'Space Mono',monospace;
+    font-size:7px; letter-spacing:2px; color:var(--accent3);
+    text-transform:uppercase;
+  }
+  @media(min-width:768px){
+    .weather-icon { font-size:24px; }
+    .weather-temp { font-size:22px; }
+    .weather-desc { font-size:9px; }
+    .weather-city { font-size:8px; }
+  }
+
+  /* LAYOUT */
+  .container { max-width:1200px; margin:0 auto; padding:16px; }
+  @media(min-width:768px) { .container { padding:32px; } }
+  .grid-2 { display:grid; grid-template-columns:1fr; gap:16px; }
+  .grid-3 { display:grid; grid-template-columns:1fr; gap:16px; }
+  @media(min-width:768px) {
+    .grid-2 { grid-template-columns:1fr 1fr; gap:20px; }
+    .grid-3 { grid-template-columns:1fr 1fr 1fr; gap:16px; }
+  }
+
+  /* CARDS */
+  .card {
+    background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:24px;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: var(--accent); }
+  .card-title { font-size:11px; letter-spacing:3px; color:var(--muted); text-transform:uppercase; margin-bottom:16px; font-family:'Space Mono',monospace; }
+
+  /* STATS */
+  .stat-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:20px; }
+  @media(min-width:768px){.stat-grid{grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px;}}
+  .stat { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px 10px; text-align:center; }
+  @media(min-width:768px){.stat{padding:20px;}}
+  .stat-num { font-size:24px; font-weight:800; line-height:1; }
+  @media(min-width:768px){.stat-num{font-size:32px;}}
+  .stat-label { font-size:10px; color:var(--muted); letter-spacing:2px; margin-top:6px; font-family:'Space Mono',monospace; }
+  .stat-num.yellow { color:var(--accent); }
+  .stat-num.red { color:var(--accent2); }
+  .stat-num.blue { color:var(--accent3); }
+  .stat-num.green { color:var(--green); }
+
+  /* BOTTOM NAV (mobile-first) */
+  .bottom-nav {
+    position:fixed; bottom:0; left:0; right:0; z-index:100;
+    background:var(--surface); border-top:1px solid var(--border);
+    display:flex; align-items:stretch;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .tab {
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:4px; padding:10px 4px; cursor:pointer; transition:all 0.2s;
+    color:var(--muted); font-weight:600; font-size:9px; letter-spacing:1px;
+    text-transform:uppercase; border:none; background:none;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .tab .tab-icon { font-size:20px; line-height:1; transition:transform 0.2s; }
+  .tab.active { color:var(--accent); }
+  .tab.active .tab-icon { transform:translateY(-2px); }
+
+  /* Push content above bottom nav */
+  body { padding-bottom:70px; }
+
+  /* Desktop: top tabs instead */
+  @media(min-width:768px) {
+    body { padding-bottom:0; }
+    .bottom-nav {
+      position:static; border-top:none; border-bottom:1px solid var(--border);
+      background:var(--surface); padding-bottom:0;
+    }
+    .tab { flex-direction:row; gap:8px; padding:14px 20px; font-size:11px; justify-content:center; }
+    .tab .tab-icon { font-size:16px; }
+    .tab.active { background:none; color:var(--accent); border-bottom:2px solid var(--accent); }
+  }
+
+  /* PROJECT CARDS */
+  .project-card {
+    background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:20px;
+    margin-bottom:12px; cursor:pointer; transition:all 0.2s;
+    position:relative; overflow:hidden;
+  }
+  .project-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; }
+  .project-card.p-alta::before { background:var(--accent2); }
+  .project-card.p-media::before { background:var(--accent); }
+  .project-card.p-bassa::before { background:var(--accent3); }
+  .project-card:hover { border-color:var(--accent); transform:translateX(2px); }
+  .project-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
+  .project-name { font-size:16px; font-weight:800; }
+  .project-tags { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
+  .tag { font-size:10px; padding:3px 8px; border-radius:20px; font-family:'Space Mono',monospace; letter-spacing:1px; }
+  .tag-alta { background:rgba(255,76,110,0.2); color:var(--accent2); border:1px solid rgba(255,76,110,0.3); }
+  .tag-media { background:rgba(232,255,60,0.15); color:var(--accent); border:1px solid rgba(232,255,60,0.3); }
+  .tag-bassa { background:rgba(60,170,255,0.15); color:var(--accent3); border:1px solid rgba(60,170,255,0.3); }
+  .tag-scadenza { background:rgba(255,255,255,0.05); color:var(--muted); border:1px solid var(--border); }
+  .progress-bar { height:4px; background:var(--surface2); border-radius:2px; overflow:hidden; margin-top:12px; }
+  .progress-fill { height:100%; border-radius:2px; transition:width 0.5s; }
+  .progress-label { display:flex; justify-content:space-between; font-size:10px; color:var(--muted); margin-top:4px; font-family:'Space Mono',monospace; }
+
+  /* FORM */
+  .form-row { display:grid; grid-template-columns:1fr; gap:12px; margin-bottom:12px; }
+  @media(min-width:600px){.form-row{grid-template-columns:1fr 1fr;}}
+  .form-group { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+  label { font-size:10px; letter-spacing:2px; color:var(--muted); font-family:'Space Mono',monospace; }
+  input, textarea, select {
+    background:var(--surface2); border:1px solid var(--border); color:var(--text);
+    padding:10px 14px; border-radius:6px; font-family:'Syne',sans-serif; font-size:14px;
+    outline:none; transition:border-color 0.2s;
+  }
+  input:focus, textarea:focus, select:focus { border-color:var(--accent); }
+  textarea { resize:vertical; min-height:80px; }
+  select option { background:var(--surface2); }
+
+  /* BUTTONS */
+  .btn { padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-family:'Syne',sans-serif; font-weight:700; font-size:13px; letter-spacing:1px; transition:all 0.2s; }
+  .btn-primary { background:var(--accent); color:#000; }
+  .btn-primary:hover { background:#fff; }
+  .btn-danger { background:rgba(255,76,110,0.2); color:var(--accent2); border:1px solid rgba(255,76,110,0.3); }
+  .btn-danger:hover { background:var(--accent2); color:#fff; }
+  .btn-ghost { background:transparent; color:var(--muted); border:1px solid var(--border); }
+  .btn-ghost:hover { border-color:var(--accent); color:var(--accent); }
+  .btn-ai { background:linear-gradient(135deg,#7928ca,#3caaff); color:#fff; }
+  .btn-ai:hover { opacity:0.85; }
+  .btn-sm { padding:6px 12px; font-size:11px; }
+
+  /* ACTION PLAN */
+  .action-item {
+    display:flex; gap:12px; align-items:flex-start;
+    padding:12px; border-radius:6px; background:var(--surface2);
+    margin-bottom:8px; border:1px solid transparent;
+    transition:all 0.2s;
+  }
+  .action-item:hover { border-color:var(--border); }
+  .action-check {
+    width:18px; height:18px; border:2px solid var(--border);
+    border-radius:4px; flex-shrink:0; cursor:pointer; margin-top:2px;
+    display:flex; align-items:center; justify-content:center;
+    transition:all 0.2s;
+  }
+  .action-check.done { background:var(--green); border-color:var(--green); }
+  .action-check.done::after { content:'✓'; font-size:11px; color:#000; font-weight:700; }
+  .action-text { flex:1; font-size:13px; line-height:1.5; }
+  .action-text.done { text-decoration:line-through; color:var(--muted); }
+  .action-meta { font-size:10px; color:var(--muted); font-family:'Space Mono',monospace; margin-top:3px; }
+  .action-priority { font-size:10px; padding:2px 8px; border-radius:10px; flex-shrink:0; }
+
+  /* CALENDAR */
+  .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+  .cal-day-name { text-align:center; font-size:10px; color:var(--muted); padding:4px; font-family:'Space Mono',monospace; }
+  .cal-day { text-align:center; padding:8px 4px; border-radius:6px; font-size:12px; cursor:pointer; transition:all 0.2s; border:1px solid transparent; }
+  .cal-day:hover { border-color:var(--border); }
+  .cal-day.today { background:var(--accent); color:#000; font-weight:700; }
+  .cal-day.has-event { position:relative; }
+  .cal-day.has-event::after { content:''; position:absolute; bottom:3px; left:50%; transform:translateX(-50%); width:4px; height:4px; border-radius:50%; background:var(--accent2); }
+  .cal-day.ferie { background:rgba(60,255,160,0.1); color:var(--green); }
+  .cal-day.empty { opacity:0; pointer-events:none; }
+
+  /* MODAL */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:200; backdrop-filter:blur(4px); }
+  .modal-overlay.open { display:flex; align-items:center; justify-content:center; }
+  .modal { background:var(--surface); border:1px solid var(--border); border-radius:12px 12px 0 0; padding:24px 20px; width:100%; max-width:600px; max-height:90vh; overflow-y:auto; margin-top:auto; }
+  .modal-overlay.open { align-items:flex-end; }
+  @media(min-width:768px){.modal{border-radius:12px;padding:32px;width:90%;margin-top:0;}.modal-overlay.open{align-items:center;}}
+  .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; }
+  .modal-title { font-size:20px; font-weight:800; }
+  .close-btn { background:none; border:none; color:var(--muted); font-size:20px; cursor:pointer; padding:4px; }
+
+  /* AI RESPONSE */
+  .ai-box { background:linear-gradient(135deg,rgba(121,40,202,0.1),rgba(60,170,255,0.1)); border:1px solid rgba(121,40,202,0.3); border-radius:8px; padding:20px; margin-top:16px; }
+  .ai-label { font-size:10px; letter-spacing:3px; color:#a78bfa; font-family:'Space Mono',monospace; margin-bottom:12px; }
+  .ai-content { font-size:13px; line-height:1.7; color:var(--text); white-space:pre-wrap; }
+  .loading-dots::after { content:'...'; animation:dots 1s infinite; }
+  @keyframes dots { 0%{content:'.'} 33%{content:'..'} 66%{content:'...'} }
+
+  /* URGENCY METER */
+  .urgency-bar { display:flex; gap:3px; margin-top:8px; }
+  .urgency-seg { flex:1; height:6px; border-radius:2px; background:var(--surface2); }
+  .urgency-seg.filled.level-1 { background:var(--green); }
+  .urgency-seg.filled.level-2 { background:var(--accent); }
+  .urgency-seg.filled.level-3 { background:#ff9900; }
+  .urgency-seg.filled.level-4 { background:var(--accent2); }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width:6px; }
+  ::-webkit-scrollbar-track { background:var(--bg); }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+  .section-title { font-size:18px; font-weight:800; margin-bottom:16px; display:flex; align-items:center; gap:10px; }
+  @media(min-width:768px){.section-title{font-size:22px;margin-bottom:20px;}}
+  .section-title .accent { color:var(--accent); }
+  .divider { border:none; border-top:1px solid var(--border); margin:24px 0; }
+  .empty-state { text-align:center; padding:48px; color:var(--muted); font-size:14px; }
+  .flex { display:flex; }
+  .gap-8 { gap:8px; }
+  .gap-12 { gap:12px; }
+  .mt-16 { margin-top:16px; }
+  .ml-auto { margin-left:auto; }
+</style>
+</head>
+<body>
+
+<header>
+  <!-- LEFT: WAR ROOM logo -->
+  <div class="war-logo">
+    <div class="war-logo-icon">
+      <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="22" cy="22" r="20" stroke="#ff4c6e" stroke-width="1" stroke-dasharray="3 2" opacity="0.5"/>
+        <circle cx="22" cy="22" r="13" stroke="#e8ff3c" stroke-width="1.2" opacity="0.7"/>
+        <circle cx="22" cy="22" r="4" fill="#ff4c6e" opacity="0.9"/>
+        <line x1="22" y1="2" x2="22" y2="9" stroke="#e8ff3c" stroke-width="1.5"/>
+        <line x1="22" y1="35" x2="22" y2="42" stroke="#e8ff3c" stroke-width="1.5"/>
+        <line x1="2" y1="22" x2="9" y2="22" stroke="#e8ff3c" stroke-width="1.5"/>
+        <line x1="35" y1="22" x2="42" y2="22" stroke="#e8ff3c" stroke-width="1.5"/>
+        <rect x="16" y="19" width="12" height="8" rx="1.5" stroke="#3caaff" stroke-width="1" opacity="0.6"/>
+        <path d="M19 19v-2a1 1 0 011-1h4a1 1 0 011 1v2" stroke="#3caaff" stroke-width="1" opacity="0.6"/>
+        <line x1="16" y1="23" x2="28" y2="23" stroke="#3caaff" stroke-width="0.8" opacity="0.6"/>
+        <circle cx="22" cy="22" r="7" stroke="#ff4c6e" stroke-width="0.5" opacity="0.4">
+          <animate attributeName="r" values="7;11;7" dur="2s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.4;0;0.4" dur="2s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+    </div>
+    <div class="war-logo-text">
+      <span class="war-logo-top">OPERATION</span>
+      <span class="war-logo-main">WAR ROOM</span>
+      <span class="war-logo-sub">project command center</span>
+    </div>
+  </div>
+
+  <!-- CENTER: date + clock -->
+  <div class="header-center">
+    <div class="header-date" id="headerDate">—</div>
+    <div class="header-clock" id="headerClock">00:00:00</div>
+  </div>
+
+  <!-- RIGHT: weather -->
+  <div class="header-weather" id="weatherWidget">
+    <div class="weather-main">
+      <span class="weather-icon" id="wIcon">⏳</span>
+      <span class="weather-temp" id="wTemp">—</span>
+    </div>
+    <div class="weather-desc" id="wDesc">rilevamento...</div>
+    <div class="weather-city" id="wCity">localizzazione</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- STATS -->
+  <div class="stat-grid" id="statsGrid">
+    <div class="stat"><div class="stat-num yellow" id="s1">0</div><div class="stat-label">PROGETTI ATTIVI</div></div>
+    <div class="stat"><div class="stat-num red" id="s2">0</div><div class="stat-label">SCADENZE URGENTI</div></div>
+    <div class="stat"><div class="stat-num blue" id="s3">0</div><div class="stat-label">AZIONI OGGI</div></div>
+    <div class="stat"><div class="stat-num green" id="s4">0%</div><div class="stat-label">COMPLETAMENTO</div></div>
+  </div>
+
+  <!-- TAB: PROGETTI -->
+  <div id="tab-progetti">
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:20px;">
+      <div class="section-title" style="margin:0;flex:1;min-width:120px;">I tuoi <span class="accent">Progetti</span></div>
+      <button class="btn btn-ai btn-sm" onclick="openAIAnalysis()">🤖 AI</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('nuovo')">+ Nuovo</button>
+    </div>
+    <!-- QUICK ADD AI BOX -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:20px;">
+      <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--accent2);text-transform:uppercase;margin-bottom:12px;">⚡ Creazione Veloce con AI</div>
+      <textarea id="quickInput" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:12px 14px;border-radius:6px;font-family:'Syne',sans-serif;font-size:13px;outline:none;resize:vertical;min-height:80px;transition:border-color 0.2s;" placeholder="Es: Lanciare il sito entro luglio, ho il dominio, manca design e contenuti. Prioritario per campagna estiva. Stimo 60 ore..."></textarea>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="btn btn-ai btn-sm" onclick="quickAddAI(event)">✨ Analizza con AI</button>
+        <span style="font-size:11px;color:var(--muted);margin-top:2px;" id="quickStatus"></span>
+      </div>
+      <div id="quickPreview"></div>
+    </div>
+
+    <!-- IMPORT MARKDOWN BOX -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:20px;">
+      <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--accent3);text-transform:uppercase;margin-bottom:12px;">📄 Import da Markdown (.MD)</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Carica un file <code style="color:var(--accent3);">.md</code> con più progetti — l'AI li estrae e compila tutti i campi automaticamente.</div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;">
+        <label class="btn btn-ghost btn-sm" style="position:relative;overflow:hidden;cursor:pointer;display:inline-flex;align-items:center;">
+          <span>📁 Scegli file</span>
+          <input type="file" id="mdFileInput" accept=".md,.markdown,.txt,text/markdown,text/plain,text/*,*/*" onchange="loadMdFile(event)" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:0;">
+        </label>
+        <span id="mdFileName" style="font-size:11px;color:var(--muted);">nessun file caricato</span>
+      </div>
+
+      <textarea id="mdInput" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:12px 14px;border-radius:6px;font-family:'Space Mono',monospace;font-size:12px;outline:none;resize:vertical;min-height:120px;transition:border-color 0.2s;" placeholder="...oppure incolla qui il contenuto Markdown:&#10;&#10;# Progetto 1&#10;- Priorità: alta&#10;- Scadenza: 30 giugno&#10;Descrizione del progetto...&#10;&#10;## Progetto 2&#10;..."></textarea>
+
+      <div style="display:flex;gap:8px;margin-top:12px;align-items:center;flex-wrap:wrap;">
+        <button class="btn btn-ai btn-sm" onclick="parseMarkdownProjects(event)">🤖 Estrai Progetti</button>
+        <span style="font-size:11px;color:var(--muted);" id="mdStatus"></span>
+      </div>
+      <div id="mdPreview"></div>
+    </div>
+
+    <div id="projectList"></div>
+  </div>
+
+  <!-- TAB: ACTION PLAN -->
+  <div id="tab-action" style="display:none;">
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:20px;">
+      <div class="section-title" style="margin:0;flex:1;min-width:100px;">Action <span class="accent">Plan</span></div>
+      <button class="btn btn-ai btn-sm" onclick="generateActionPlan()">🤖 AI Plan</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('azione')">+ Azione</button>
+    </div>
+    <div id="filterBar" class="flex gap-8" style="margin-bottom:16px;">
+      <button class="btn btn-ghost btn-sm" onclick="filterActions('tutti')">Tutti</button>
+      <button class="btn btn-ghost btn-sm" onclick="filterActions('oggi')">Oggi</button>
+      <button class="btn btn-ghost btn-sm" onclick="filterActions('settimana')">Questa settimana</button>
+    </div>
+    <div id="actionList"></div>
+  </div>
+
+  <!-- TAB: CALENDARIO -->
+  <div id="tab-calendario" style="display:none;">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">📅 Calendario — <span id="calMonthLabel"></span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <button class="btn btn-ghost btn-sm" onclick="changeMonth(-1)">◀</button>
+          <span style="font-weight:700;" id="calMonth"></span>
+          <button class="btn btn-ghost btn-sm" onclick="changeMonth(1)">▶</button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div style="display:flex;gap:16px;margin-top:16px;">
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);"><div style="width:10px;height:10px;background:var(--accent);border-radius:50%;"></div>Oggi</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);"><div style="width:10px;height:10px;background:var(--accent2);border-radius:50%;"></div>Scadenza</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);"><div style="width:10px;height:10px;background:var(--green);border-radius:50%;"></div>Ferie</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">🔴 Prossime Scadenze</div>
+        <div id="scadenzeList"></div>
+        <hr class="divider">
+        <div class="card-title">🏖️ Periodi di Ferie / Famiglia</div>
+        <button class="btn btn-ghost btn-sm" onclick="openModal('ferie')" style="margin-bottom:12px;">+ Aggiungi periodo</button>
+        <div id="ferieList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: IMPOSTAZIONI -->
+  <div id="tab-impostazioni" style="display:none;">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">⚙️ Preferenze di Lavoro</div>
+        <div class="form-group">
+          <label>ORE LAVORATIVE AL GIORNO</label>
+          <input type="number" id="oreGiorno" value="8" min="1" max="16">
+        </div>
+        <div class="form-group">
+          <label>GIORNI LAVORATIVI</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:4px;font-size:13px;letter-spacing:0;"><input type="checkbox" id="d1" checked> Lun</label>
+            <label style="display:flex;align-items:center;gap:4px;font-size:13px;letter-spacing:0;"><input type="checkbox" id="d2" checked> Mar</label>
+            <label style="display:flex;align-items:center;gap:4px;font-size:13px;letter-spacing:0;"><input type="checkbox" id="d3" checked> Mer</label>
+            <label style="display:flex;align-items:center;gap:4px;font-size:13px;letter-spacing:0;"><input type="checkbox" id="d4" checked> Gio</label>
+            <label style="display:flex;align-items:center;gap:4px;font-size:13px;letter-spacing:0;"><input type="checkbox" id="d5" checked> Ven</label>
+            <label style="display:flex;align-items:center;gap:4px;font-size:13px;letter-spacing:0;"><input type="checkbox" id="d6"> Sab</label>
+            <label style="display:flex;align-items:center;gap:4px;font-size:13px;letter-spacing:0;"><input type="checkbox" id="d7"> Dom</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>ORE FAMIGLIA (settimanali)</label>
+          <input type="number" id="oreFamiglia" value="15" min="0" max="40">
+        </div>
+        <button class="btn btn-primary" onclick="saveSettings()">Salva Impostazioni</button>
+      </div>
+      <div class="card">
+        <div class="card-title">📊 Riepilogo Capacità</div>
+        <div id="capacitaRiepilogo"></div>
+      </div>
+    </div>
+    <div class="card mt-16">
+      <div class="card-title">⚠️ Zona Pericolo</div>
+      <button class="btn btn-danger btn-sm" onclick="if(confirm('Cancellare tutto?'))clearAll()">🗑️ Cancella tutti i dati</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav" id="bottomNav">
+  <button class="tab active" onclick="showTab('progetti')" id="nav-progetti">
+    <span class="tab-icon">📋</span>Progetti
+  </button>
+  <button class="tab" onclick="showTab('action')" id="nav-action">
+    <span class="tab-icon">⚡</span>Action
+  </button>
+  <button class="tab" onclick="showTab('calendario')" id="nav-calendario">
+    <span class="tab-icon">📅</span>Calendario
+  </button>
+  <button class="tab" onclick="showTab('impostazioni')" id="nav-impostazioni">
+    <span class="tab-icon">⚙️</span>Imposta
+  </button>
+</nav>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+let projects = JSON.parse(localStorage.getItem('cc_projects') || '[]');
+let actions = JSON.parse(localStorage.getItem('cc_actions') || '[]');
+let ferie = JSON.parse(localStorage.getItem('cc_ferie') || '[]');
+let settings = JSON.parse(localStorage.getItem('cc_settings') || '{"oreGiorno":8,"oreFamiglia":15,"giorni":[1,2,3,4,5]}');
+let calOffset = 0;
+
+function load() {
+  try {
+    const p = localStorage.getItem('cc_projects');
+    const a = localStorage.getItem('cc_actions');
+    const f = localStorage.getItem('cc_ferie');
+    const s = localStorage.getItem('cc_settings');
+    if(p) projects = JSON.parse(p);
+    if(a) actions = JSON.parse(a);
+    if(f) ferie = JSON.parse(f);
+    if(s) settings = JSON.parse(s);
+  } catch(e) { console.warn('Load error:', e); }
+}
+
+function save() {
+  localStorage.setItem('cc_projects', JSON.stringify(projects));
+  localStorage.setItem('cc_actions', JSON.stringify(actions));
+  localStorage.setItem('cc_ferie', JSON.stringify(ferie));
+  localStorage.setItem('cc_settings', JSON.stringify(settings));
+  updateStats();
+}
+
+// ============================================================
+// LLM — proxy verso il server (niente CORS, niente API key esposta)
+// ============================================================
+async function callLLM(messages, maxTokens) {
+  const res = await fetch('/api/warroom/llm', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages, max_tokens: maxTokens || 1000 })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  return data.content?.map(c => c.text || '').join('') || '';
+}
+
+// ============================================================
+// TABS
+// ============================================================
+function showTab(name) {
+  ['progetti','action','calendario','impostazioni'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t===name ? 'block':'none';
+  });
+  ['progetti','action','calendario','impostazioni'].forEach(t => {
+    const el = document.getElementById('nav-'+t);
+    if(el) el.classList.toggle('active', t===name);
+  });
+  if(name==='progetti') renderProjects();
+  if(name==='action') renderActions();
+  if(name==='calendario') { renderCalendar(); renderScadenze(); renderFerie(); }
+  if(name==='impostazioni') renderCapacita();
+}
+
+// ============================================================
+// STATS
+// ============================================================
+function updateStats() {
+  const attivi = projects.filter(p=>p.stato!=='completato').length;
+  const oggi = new Date(); oggi.setHours(0,0,0,0);
+  const urgenti = projects.filter(p => {
+    if(!p.scadenza||p.stato==='completato') return false;
+    const diff = (new Date(p.scadenza)-oggi)/(86400000);
+    return diff<=14 && diff>=0;
+  }).length;
+  const azioniOggi = actions.filter(a => {
+    if(a.done) return false;
+    if(!a.data) return true;
+    const d = new Date(a.data); d.setHours(0,0,0,0);
+    return d.getTime()===oggi.getTime();
+  }).length;
+  const tot = actions.length;
+  const done = actions.filter(a=>a.done).length;
+  const perc = tot ? Math.round(done/tot*100) : 0;
+  document.getElementById('s1').textContent = attivi;
+  document.getElementById('s2').textContent = urgenti;
+  document.getElementById('s3').textContent = azioniOggi;
+  document.getElementById('s4').textContent = perc+'%';
+}
+
+// ============================================================
+// PROJECTS
+// ============================================================
+function renderProjects() {
+  const el = document.getElementById('projectList');
+  if(!projects.length) { el.innerHTML='<div class="empty-state">Nessun progetto ancora.<br>Clicca "+ Nuovo Progetto" per iniziare.</div>'; return; }
+  const sorted = [...projects].sort((a,b) => {
+    const pp = {alta:0,media:1,bassa:2};
+    if(pp[a.priorita]!==pp[b.priorita]) return pp[a.priorita]-pp[b.priorita];
+    if(a.scadenza && b.scadenza) return new Date(a.scadenza)-new Date(b.scadenza);
+    return 0;
+  });
+  el.innerHTML = sorted.map(p => {
+    const tot = actions.filter(a=>a.progetto===p.id).length;
+    const done = actions.filter(a=>a.progetto===p.id&&a.done).length;
+    const perc = tot ? Math.round(done/tot*100) : 0;
+    const oggi = new Date(); oggi.setHours(0,0,0,0);
+    const daysLeft = p.scadenza ? Math.ceil((new Date(p.scadenza)-oggi)/86400000) : null;
+    const urgency = daysLeft!==null ? (daysLeft<=3?4:daysLeft<=7?3:daysLeft<=14?2:1) : 1;
+    const colore = p.priorita==='alta'?'var(--accent2)':p.priorita==='media'?'var(--accent)':'var(--accent3)';
+    const urgStr = daysLeft===null ? '—' : daysLeft<0 ? '⚠️ SCADUTO' : daysLeft===0 ? '🔴 OGGI' : `${daysLeft} giorni`;
+    return `<div class="project-card p-${p.priorita}" onclick="openProject('${p.id}')">
+      <div class="project-header">
+        <div>
+          <div class="project-name">${p.nome}</div>
+          <div class="project-tags">
+            <span class="tag tag-${p.priorita}">${p.priorita.toUpperCase()}</span>
+            ${p.scadenza?`<span class="tag tag-scadenza">📅 ${new Date(p.scadenza).toLocaleDateString('it-IT')}</span>`:''}
+            ${p.categoria?`<span class="tag tag-scadenza">${p.categoria}</span>`:''}
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px;color:${daysLeft!==null&&daysLeft<=7?'var(--accent2)':'var(--muted)'};font-family:'Space Mono',monospace;">${urgStr}</div>
+          <div style="font-size:20px;font-weight:800;color:${colore};">${perc}%</div>
+        </div>
+      </div>
+      ${p.descrizione?`<div style="font-size:12px;color:var(--muted);margin-bottom:8px;">${p.descrizione}</div>`:''}
+      <div class="urgency-bar">${[1,2,3,4,5].map(i=>`<div class="urgency-seg ${i<=Math.round(perc/20)?'filled level-'+Math.min(urgency,4):''}"></div>`).join('')}</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${perc}%;background:${colore};"></div></div>
+      <div class="progress-label"><span>${done}/${tot} azioni</span><span>${perc}%</span></div>
+    </div>`;
+  }).join('');
+}
+
+function openProject(id) {
+  const p = projects.find(x=>x.id===id);
+  if(!p) return;
+  const pActions = actions.filter(a=>a.progetto===id);
+  const done = pActions.filter(a=>a.done).length;
+  document.getElementById('modalContent').innerHTML = `
+    <div class="modal-header">
+      <div class="modal-title">${p.nome}</div>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="project-tags" style="margin-bottom:16px;">
+      <span class="tag tag-${p.priorita}">${p.priorita.toUpperCase()}</span>
+      ${p.scadenza?`<span class="tag tag-scadenza">📅 ${new Date(p.scadenza).toLocaleDateString('it-IT')}</span>`:''}
+      ${p.stato?`<span class="tag tag-scadenza">${p.stato}</span>`:''}
+    </div>
+    ${p.descrizione?`<p style="color:var(--muted);font-size:13px;margin-bottom:16px;">${p.descrizione}</p>`:''}
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Azioni completate: <strong style="color:var(--green);">${done}/${pActions.length}</strong></p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;">
+      <button class="btn btn-primary btn-sm" onclick="closeModal();showTab('action')">Vai alle Azioni</button>
+      <button class="btn btn-ghost btn-sm" onclick="editProject('${id}')">✏️ Modifica</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteProject('${id}')">🗑️ Elimina</button>
+      <button class="btn btn-ghost btn-sm" onclick="toggleStatus('${id}')">${p.stato==='completato'?'↩️ Riapri':'✅ Completa'}</button>
+    </div>
+    <div class="card-title">Azioni del Progetto</div>
+    ${pActions.length ? pActions.map(a=>`
+      <div class="action-item">
+        <div class="action-check ${a.done?'done':''}" onclick="toggleAction('${a.id}');openProject('${id}')"></div>
+        <div style="flex:1;"><div class="action-text ${a.done?'done':''}">${a.testo}</div>
+        ${a.data?`<div class="action-meta">📅 ${new Date(a.data).toLocaleDateString('it-IT')}</div>`:''}
+        </div>
+      </div>`).join('') : '<div class="empty-state" style="padding:20px;">Nessuna azione. Aggiungile dalla tab Action Plan.</div>'}
+  `;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function editProject(id) {
+  const p = projects.find(x=>x.id===id);
+  closeModal();
+  openModal('nuovo', p);
+}
+
+function deleteProject(id) {
+  if(!confirm('Eliminare questo progetto?')) return;
+  projects = projects.filter(x=>x.id!==id);
+  actions = actions.filter(a=>a.progetto!==id);
+  save(); closeModal(); renderProjects();
+}
+
+function toggleStatus(id) {
+  const p = projects.find(x=>x.id===id);
+  p.stato = p.stato==='completato' ? 'attivo' : 'completato';
+  save(); closeModal(); renderProjects();
+}
+
+// ============================================================
+// MODALS
+// ============================================================
+function openModal(type, data=null) {
+  const mc = document.getElementById('modalContent');
+  if(type==='nuovo') {
+    const isEdit = data !== null;
+    mc.innerHTML = `
+      <div class="modal-header">
+        <div class="modal-title">${isEdit?'Modifica':'Nuovo'} Progetto</div>
+        <button class="close-btn" onclick="closeModal()">✕</button>
+      </div>
+      <div class="form-group"><label>NOME PROGETTO *</label><input id="f_nome" value="${isEdit?data.nome:''}" placeholder="Es: App mobile clienti..."></div>
+      <div class="form-group"><label>DESCRIZIONE</label><textarea id="f_desc" placeholder="Descrizione breve...">${isEdit?data.descrizione:''}</textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label>PRIORITÀ</label><select id="f_prio"><option value="alta" ${isEdit&&data.priorita==='alta'?'selected':''}>🔴 Alta</option><option value="media" ${!isEdit||data.priorita==='media'?'selected':''}>🟡 Media</option><option value="bassa" ${isEdit&&data.priorita==='bassa'?'selected':''}>🔵 Bassa</option></select></div>
+        <div class="form-group"><label>SCADENZA</label><input type="date" id="f_scad" value="${isEdit&&data.scadenza?data.scadenza:''}"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>CATEGORIA</label><input id="f_cat" value="${isEdit&&data.categoria?data.categoria:''}" placeholder="Es: Dev, Marketing..."></div>
+        <div class="form-group"><label>ORE STIMATE</label><input type="number" id="f_ore" value="${isEdit&&data.ore?data.ore:''}" placeholder="Es: 40"></div>
+      </div>
+      <div class="form-group"><label>STATO</label><select id="f_stato"><option value="attivo" ${!isEdit||data.stato==='attivo'?'selected':''}>Attivo</option><option value="in pausa" ${isEdit&&data.stato==='in pausa'?'selected':''}>In Pausa</option><option value="completato" ${isEdit&&data.stato==='completato'?'selected':''}>Completato</option></select></div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn btn-primary" onclick="saveProject(${isEdit?`'${data.id}'`:'null'})">${isEdit?'Aggiorna':'Crea Progetto'}</button>
+        <button class="btn btn-ghost" onclick="closeModal()">Annulla</button>
+      </div>`;
+  } else if(type==='azione') {
+    mc.innerHTML = `
+      <div class="modal-header"><div class="modal-title">Nuova Azione</div><button class="close-btn" onclick="closeModal()">✕</button></div>
+      <div class="form-group"><label>AZIONE *</label><textarea id="a_testo" placeholder="Cosa devi fare?"></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label>PROGETTO</label><select id="a_prog"><option value="">— Nessuno —</option>${projects.map(p=>`<option value="${p.id}">${p.nome}</option>`).join('')}</select></div>
+        <div class="form-group"><label>DATA</label><input type="date" id="a_data"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>PRIORITÀ</label><select id="a_prio"><option value="alta">🔴 Alta</option><option value="media" selected>🟡 Media</option><option value="bassa">🔵 Bassa</option></select></div>
+        <div class="form-group"><label>DURATA (min)</label><input type="number" id="a_dur" placeholder="Es: 60"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn btn-primary" onclick="saveAction()">Aggiungi Azione</button>
+        <button class="btn btn-ghost" onclick="closeModal()">Annulla</button>
+      </div>`;
+  } else if(type==='ferie') {
+    mc.innerHTML = `
+      <div class="modal-header"><div class="modal-title">Periodo Ferie / Famiglia</div><button class="close-btn" onclick="closeModal()">✕</button></div>
+      <div class="form-group"><label>NOME PERIODO</label><input id="fe_nome" placeholder="Es: Vacanze estive, Compleanno bimbo..."></div>
+      <div class="form-row">
+        <div class="form-group"><label>INIZIO</label><input type="date" id="fe_ini"></div>
+        <div class="form-group"><label>FINE</label><input type="date" id="fe_fin"></div>
+      </div>
+      <div class="form-group"><label>TIPO</label><select id="fe_tipo"><option value="ferie">🏖️ Ferie</option><option value="famiglia">👨‍👩‍👧 Famiglia</option><option value="festivo">🎉 Festivo</option></select></div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn btn-primary" onclick="saveFerie()">Salva</button>
+        <button class="btn btn-ghost" onclick="closeModal()">Annulla</button>
+      </div>`;
+  }
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal(e) {
+  if(e && e.target!==document.getElementById('modalOverlay')) return;
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function saveProject(editId) {
+  const nome = document.getElementById('f_nome').value.trim();
+  if(!nome) { alert('Inserisci il nome del progetto'); return; }
+  if(editId && editId!=='null') {
+    const p = projects.find(x=>x.id===editId);
+    p.nome=nome; p.descrizione=document.getElementById('f_desc').value;
+    p.priorita=document.getElementById('f_prio').value; p.scadenza=document.getElementById('f_scad').value;
+    p.categoria=document.getElementById('f_cat').value; p.ore=document.getElementById('f_ore').value;
+    p.stato=document.getElementById('f_stato').value;
+  } else {
+    projects.push({ id:'p'+Date.now(), nome, descrizione:document.getElementById('f_desc').value,
+      priorita:document.getElementById('f_prio').value, scadenza:document.getElementById('f_scad').value,
+      categoria:document.getElementById('f_cat').value, ore:document.getElementById('f_ore').value,
+      stato:document.getElementById('f_stato').value, creato:new Date().toISOString() });
+  }
+  save(); closeModal(); renderProjects();
+}
+
+function saveAction() {
+  const testo = document.getElementById('a_testo').value.trim();
+  if(!testo) { alert('Inserisci il testo dell\'azione'); return; }
+  actions.push({ id:'a'+Date.now(), testo, progetto:document.getElementById('a_prog').value,
+    data:document.getElementById('a_data').value, priorita:document.getElementById('a_prio').value,
+    durata:document.getElementById('a_dur').value, done:false, creato:new Date().toISOString() });
+  save(); closeModal(); renderActions();
+}
+
+function saveFerie() {
+  const nome = document.getElementById('fe_nome').value.trim();
+  const ini = document.getElementById('fe_ini').value;
+  const fin = document.getElementById('fe_fin').value;
+  if(!nome||!ini||!fin) { alert('Compila tutti i campi'); return; }
+  ferie.push({ id:'f'+Date.now(), nome, inizio:ini, fine:fin, tipo:document.getElementById('fe_tipo').value });
+  save(); closeModal(); renderCalendar(); renderFerie();
+}
+
+// ============================================================
+// ACTIONS
+// ============================================================
+function renderActions(filter) {
+  filter = filter || 'tutti';
+  const el = document.getElementById('actionList');
+  const oggi = new Date(); oggi.setHours(0,0,0,0);
+  const fine = new Date(oggi); fine.setDate(fine.getDate()+7);
+  let list = [...actions];
+  if(filter==='oggi') list = list.filter(a=>{ if(!a.data) return false; const d=new Date(a.data);d.setHours(0,0,0,0);return d.getTime()===oggi.getTime(); });
+  if(filter==='settimana') list = list.filter(a=>{ if(!a.data) return false; const d=new Date(a.data);return d>=oggi&&d<=fine; });
+  list.sort((a,b)=>{ if(a.done!==b.done) return a.done?1:-1; const pp={alta:0,media:1,bassa:2}; return (pp[a.priorita]||1)-(pp[b.priorita]||1); });
+  if(!list.length) { el.innerHTML='<div class="empty-state">Nessuna azione. Aggiungine una o usa l\'AI per generare il tuo piano!</div>'; return; }
+  el.innerHTML = list.map(a => {
+    const proj = a.progetto ? projects.find(p=>p.id===a.progetto) : null;
+    const colore = a.priorita==='alta'?'var(--accent2)':a.priorita==='media'?'var(--accent)':'var(--accent3)';
+    return `<div class="action-item">
+      <div class="action-check ${a.done?'done':''}" onclick="toggleAction('${a.id}')"></div>
+      <div style="flex:1;">
+        <div class="action-text ${a.done?'done':''}">${a.testo}</div>
+        <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;">
+          ${proj?`<span class="tag tag-scadenza">${proj.nome}</span>`:''}
+          ${a.data?`<span class="action-meta">📅 ${new Date(a.data).toLocaleDateString('it-IT')}</span>`:''}
+          ${a.durata?`<span class="action-meta">⏱ ${a.durata} min</span>`:''}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+        <span class="action-priority" style="background:${colore}22;color:${colore};border:1px solid ${colore}44;">${a.priorita}</span>
+        <button class="btn btn-danger btn-sm" onclick="deleteAction('${a.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleAction(id) {
+  const a = actions.find(x=>x.id===id);
+  if(a) { a.done=!a.done; save(); renderActions(); }
+}
+
+function deleteAction(id) {
+  actions = actions.filter(x=>x.id!==id);
+  save(); renderActions();
+}
+
+function filterActions(f) {
+  document.querySelectorAll('#filterBar .btn').forEach((b,i)=>b.classList.toggle('active',['tutti','oggi','settimana'][i]===f));
+  renderActions(f);
+}
+
+// ============================================================
+// CALENDAR
+// ============================================================
+function renderCalendar() {
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth()+calOffset, 1);
+  const mesi=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+  document.getElementById('calMonth').textContent = mesi[d.getMonth()]+' '+d.getFullYear();
+  document.getElementById('calMonthLabel').textContent = mesi[d.getMonth()];
+  const firstDay = (d.getDay()+6)%7;
+  const daysInMonth = new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+  const oggi = new Date(); oggi.setHours(0,0,0,0);
+  const scadenze = projects.filter(p=>p.scadenza).map(p=>p.scadenza.substring(0,7)===(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'))?parseInt(p.scadenza.split('-')[2]):null).filter(Boolean);
+
+  const ferieSet = new Set();
+  ferie.forEach(f => {
+    const ini = new Date(f.inizio); const fin = new Date(f.fine);
+    for(let dd=new Date(ini);dd<=fin;dd.setDate(dd.getDate()+1)) {
+      if(dd.getFullYear()===d.getFullYear()&&dd.getMonth()===d.getMonth()) ferieSet.add(dd.getDate());
+    }
+  });
+
+  let html = ['L','M','M','G','V','S','D'].map(g=>`<div class="cal-day-name">${g}</div>`).join('');
+  for(let i=0;i<firstDay;i++) html+=`<div class="cal-day empty"></div>`;
+  for(let day=1;day<=daysInMonth;day++) {
+    const isToday = calOffset===0 && day===oggi.getDate();
+    const hasScad = scadenze.includes(day);
+    const isFerie = ferieSet.has(day);
+    html+=`<div class="cal-day ${isToday?'today':''} ${hasScad?'has-event':''} ${isFerie&&!isToday?'ferie':''}">${day}</div>`;
+  }
+  document.getElementById('calGrid').innerHTML = html;
+}
+
+function changeMonth(d) { calOffset+=d; renderCalendar(); }
+
+function renderScadenze() {
+  const el = document.getElementById('scadenzeList');
+  const oggi = new Date(); oggi.setHours(0,0,0,0);
+  const upcoming = projects.filter(p=>p.scadenza&&p.stato!=='completato').map(p=>({...p,diff:Math.ceil((new Date(p.scadenza)-oggi)/86400000)})).filter(p=>p.diff>=0).sort((a,b)=>a.diff-b.diff);
+  if(!upcoming.length) { el.innerHTML='<div style="color:var(--muted);font-size:13px;">Nessuna scadenza imminente.</div>'; return; }
+  el.innerHTML = upcoming.slice(0,5).map(p=>{
+    const col = p.diff<=3?'var(--accent2)':p.diff<=7?'var(--accent)':'var(--muted)';
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+      <div><div style="font-size:13px;font-weight:600;">${p.nome}</div><div style="font-size:11px;color:var(--muted);">${new Date(p.scadenza).toLocaleDateString('it-IT')}</div></div>
+      <div style="font-size:11px;font-family:'Space Mono',monospace;color:${col};">${p.diff===0?'OGGI':p.diff+'gg'}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderFerie() {
+  const el = document.getElementById('ferieList');
+  if(!ferie.length) { el.innerHTML='<div style="color:var(--muted);font-size:12px;">Nessun periodo inserito.</div>'; return; }
+  el.innerHTML = ferie.map(f=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+      <div><div style="font-size:13px;font-weight:600;">${f.nome}</div>
+      <div style="font-size:11px;color:var(--muted);">${new Date(f.inizio).toLocaleDateString('it-IT')} → ${new Date(f.fine).toLocaleDateString('it-IT')}</div></div>
+      <button class="btn btn-danger btn-sm" onclick="deleteFerie('${f.id}')">✕</button>
+    </div>`).join('');
+}
+
+function deleteFerie(id) { ferie=ferie.filter(f=>f.id!==id); save(); renderCalendar(); renderFerie(); }
+
+// ============================================================
+// SETTINGS & CAPACITY
+// ============================================================
+function saveSettings() {
+  settings.oreGiorno = parseInt(document.getElementById('oreGiorno').value)||8;
+  settings.oreFamiglia = parseInt(document.getElementById('oreFamiglia').value)||0;
+  settings.giorni = [1,2,3,4,5,6,7].filter((_,i)=>document.getElementById('d'+(i+1)).checked);
+  save(); alert('Salvato!'); renderCapacita();
+}
+
+function renderCapacita() {
+  const oreDisp = settings.oreGiorno * settings.giorni.length;
+  const oreFam = settings.oreFamiglia || 0;
+  const oreNettoSett = oreDisp - oreFam/5*settings.giorni.length;
+  document.getElementById('capacitaRiepilogo').innerHTML = `
+    <div style="display:grid;gap:12px;">
+      <div style="padding:12px;background:var(--surface2);border-radius:6px;">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">ORE/SETTIMANA DISPONIBILI</div>
+        <div style="font-size:24px;font-weight:800;color:var(--accent);">${oreDisp}h</div>
+      </div>
+      <div style="padding:12px;background:var(--surface2);border-radius:6px;">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">ORE NETTE (- famiglia)</div>
+        <div style="font-size:24px;font-weight:800;color:var(--green);">${Math.max(0,Math.round(oreNettoSett*10)/10)}h</div>
+      </div>
+      <div style="padding:12px;background:var(--surface2);border-radius:6px;">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">PROGETTI GESTIBILI (40h cad.)</div>
+        <div style="font-size:24px;font-weight:800;color:var(--accent3);">${Math.floor(oreNettoSett*4/40)}</div>
+      </div>
+    </div>`;
+  document.getElementById('oreGiorno').value = settings.oreGiorno;
+  document.getElementById('oreFamiglia').value = settings.oreFamiglia;
+  [1,2,3,4,5,6,7].forEach((d,i)=>{ document.getElementById('d'+(i+1)).checked = settings.giorni.includes(d); });
+}
+
+// ============================================================
+// AI FEATURES — usa il proxy /api/warroom/llm
+// ============================================================
+async function openAIAnalysis() {
+  if(!projects.length) { alert('Aggiungi prima qualche progetto!'); return; }
+  document.getElementById('modalContent').innerHTML = `
+    <div class="modal-header"><div class="modal-title">🤖 AI Analysis</div><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">Analisi intelligente dei tuoi progetti e priorità...</p>
+    <div class="ai-box"><div class="ai-label">▸ ANALISI IN CORSO</div><div class="ai-content"><span class="loading-dots">Elaborazione</span></div></div>`;
+  document.getElementById('modalOverlay').classList.add('open');
+
+  const oggi = new Date();
+  const progettiInfo = projects.map(p => {
+    const tot = actions.filter(a=>a.progetto===p.id).length;
+    const done = actions.filter(a=>a.progetto===p.id&&a.done).length;
+    const daysLeft = p.scadenza ? Math.ceil((new Date(p.scadenza)-oggi)/86400000) : null;
+    return `- "${p.nome}" | Priorità: ${p.priorita} | Scadenza: ${p.scadenza||'non definita'} (${daysLeft!==null?daysLeft+' giorni':'—'}) | Avanzamento: ${tot?Math.round(done/tot*100):0}% | Stato: ${p.stato} | Ore stimate: ${p.ore||'n.d.'}`;
+  }).join('\n');
+
+  try {
+    const text = await callLLM([{
+      role: 'user',
+      content: `Sei un esperto di project management. Analizza questi progetti e dai consigli pratici in italiano:\n\n${progettiInfo}\n\nOrari disponibili: ${settings.oreGiorno}h/giorno, ${settings.giorni.length} giorni/settimana, ${settings.oreFamiglia}h/sett famiglia.\nFerie pianificate: ${ferie.map(f=>f.nome+' ('+f.inizio+' → '+f.fine+')').join(', ')||'nessuna'}.\n\nFornisci: 1) Analisi dei rischi 2) Ordine di priorità consigliato 3) Avvertimenti su scadenze critiche 4) Suggerimenti pratici. Sii conciso e diretto.`
+    }], 1000);
+    document.querySelector('.ai-content').textContent = text || 'Risposta non disponibile.';
+    document.querySelector('.ai-label').textContent = '▸ ANALISI COMPLETATA';
+  } catch(e) {
+    document.querySelector('.ai-content').textContent = 'Errore: ' + e.message;
+  }
+}
+
+async function generateActionPlan() {
+  if(!projects.length) { alert('Aggiungi prima qualche progetto!'); return; }
+  document.getElementById('modalContent').innerHTML = `
+    <div class="modal-header"><div class="modal-title">🤖 Genera Action Plan</div><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">Generazione piano azioni per i prossimi 7 giorni...</p>
+    <div class="ai-box"><div class="ai-label">▸ GENERAZIONE IN CORSO</div><div class="ai-content"><span class="loading-dots">Elaborazione</span></div></div>`;
+  document.getElementById('modalOverlay').classList.add('open');
+
+  const oggi = new Date();
+  const progettiInfo = projects.filter(p=>p.stato!=='completato').map(p => {
+    const daysLeft = p.scadenza ? Math.ceil((new Date(p.scadenza)-oggi)/86400000) : null;
+    return `- "${p.nome}" | Priorità: ${p.priorita} | Scadenza tra: ${daysLeft!==null?daysLeft+' giorni':'non definita'} | Ore stimate: ${p.ore||'n.d.'}`;
+  }).join('\n');
+
+  try {
+    const raw = await callLLM([{
+      role: 'user',
+      content: `Sei un coach di produttività. Crea un action plan pratico per i prossimi 7 giorni basato su questi progetti:\n\n${progettiInfo}\n\nDisponibilità: ${settings.oreGiorno}h/giorno, ${settings.giorni.length}gg/settimana.\n\nRispondi SOLO in JSON valido (nessun testo extra) con questo formato:\n{"azioni":[{"testo":"...","progetto_nome":"...","giorno_offset":0,"priorita":"alta|media|bassa","durata_minuti":60}]}\n\nCrea 8-12 azioni concrete e specifiche distribuite nei 7 giorni.`
+    }], 1000);
+    const clean = raw.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(clean);
+    if(parsed.azioni && parsed.azioni.length) {
+      const oggi2 = new Date();
+      let added = 0;
+      parsed.azioni.forEach(a => {
+        const proj = projects.find(p=>p.nome===a.progetto_nome||p.nome.toLowerCase().includes((a.progetto_nome||'').toLowerCase()));
+        const d = new Date(oggi2); d.setDate(d.getDate()+(a.giorno_offset||0));
+        actions.push({ id:'a'+Date.now()+Math.random(), testo:a.testo, progetto:proj?proj.id:'',
+          data:d.toISOString().split('T')[0], priorita:a.priorita||'media',
+          durata:a.durata_minuti||60, done:false, creato:new Date().toISOString() });
+        added++;
+      });
+      save();
+      document.querySelector('.ai-content').textContent = `✅ Aggiunte ${added} azioni al tuo piano!\n\nVai nella tab "Action Plan" per vederle e gestirle.`;
+      document.querySelector('.ai-label').textContent = '▸ PIANO GENERATO';
+    }
+  } catch(e) {
+    document.querySelector('.ai-content').textContent = 'Errore: ' + e.message;
+  }
+}
+
+function clearAll() { projects=[]; actions=[]; ferie=[]; save(); renderProjects(); renderActions(); }
+
+// ============================================================
+// CLOCK
+// ============================================================
+function startClock() {
+  function tick() {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2,'0');
+    const mm = String(now.getMinutes()).padStart(2,'0');
+    const ss = String(now.getSeconds()).padStart(2,'0');
+    const el = document.getElementById('headerClock');
+    if(el) el.textContent = hh+':'+mm+':'+ss;
+    const dateEl = document.getElementById('headerDate');
+    if(dateEl) dateEl.textContent = now.toLocaleDateString('it-IT',{weekday:'short',day:'numeric',month:'short'}).toUpperCase();
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+// ============================================================
+// WEATHER (Open-Meteo, no API key needed)
+// ============================================================
+function loadWeather() {
+  if (!navigator.geolocation) {
+    document.getElementById('wCity').textContent = 'geolocalizzazione non disponibile';
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      fetch('https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lon + '&format=json')
+        .then(r => r.json())
+        .then(geoData => {
+          const city = (geoData.address && (geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county)) || 'Sconosciuta';
+          return fetch('https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current=temperature_2m,weathercode')
+            .then(r => r.json())
+            .then(wData => {
+              const temp = Math.round(wData.current.temperature_2m);
+              const code = wData.current.weathercode;
+              const icons = {0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',71:'❄️',73:'❄️',75:'❄️',80:'🌦️',81:'🌧️',82:'⛈️',95:'⛈️',96:'⛈️',99:'⛈️'};
+              const descs = {0:'Sereno',1:'Prevalentemente sereno',2:'Parzialmente nuvoloso',3:'Coperto',45:'Nebbia',48:'Nebbia gelata',51:'Pioggerella',53:'Pioggerella mod.',55:'Pioggerella intensa',61:'Pioggia lieve',63:'Pioggia mod.',65:'Pioggia forte',71:'Neve lieve',73:'Neve mod.',75:'Neve intensa',80:'Rovesci',81:'Rovesci mod.',82:'Rovesci forti',95:'Temporale',96:'Temporale+grandine',99:'Temporale forte'};
+              document.getElementById('wIcon').textContent = icons[code] || '🌡️';
+              document.getElementById('wTemp').textContent = temp + '°C';
+              document.getElementById('wDesc').textContent = descs[code] || 'N.D.';
+              document.getElementById('wCity').textContent = city.toUpperCase();
+            });
+        })
+        .catch(e => {
+          console.warn('Weather error:', e);
+          document.getElementById('wCity').textContent = 'errore meteo';
+        });
+    },
+    function() {
+      const el = document.getElementById('wCity');
+      if(el) el.textContent = 'meteo non disponibile';
+    }
+  );
+}
+
+// ============================================================
+// INIT
+// ============================================================
+load();
+updateStats();
+renderProjects();
+startClock();
+loadWeather();
+
+// ============================================================
+// QUICK ADD AI
+// ============================================================
+let quickData = null;
+
+// FIX: event passato come parametro esplicito dall'onclick
+function quickAddAI(ev) {
+  const text = (document.getElementById('quickInput').value || '').trim();
+  const status = document.getElementById('quickStatus');
+
+  if(!text || text.length < 20) {
+    status.textContent = '❌ Min 20 caratteri';
+    return;
+  }
+
+  const btn = ev.target;
+  btn.disabled = true;
+  btn.textContent = '⏳ Analisi...';
+  status.textContent = 'Analizzando...';
+
+  const prompt = `Sei un project manager. Leggi questa descrizione di progetto e estrai i dati in JSON puro, NESSUN testo extra:
+
+"${text}"
+
+Rispondi SOLO con questo JSON (compila tutti i campi):
+{"nome":"titolo","priorita":"alta","scadenza":"2026-06-30","categoria":"tipo","ore":60,"descrizione":"breve"}`;
+
+  callLLM([{ role: 'user', content: prompt }], 500)
+    .then(raw => {
+      const j1 = raw.indexOf('{');
+      const j2 = raw.lastIndexOf('}');
+      if(j1 < 0 || j2 < 0) throw new Error('JSON non trovato');
+      quickData = JSON.parse(raw.substring(j1, j2+1));
+      showQuickPreview();
+      status.textContent = '';
+    })
+    .catch(err => {
+      status.textContent = '❌ ' + err.message;
+      console.error('quickAddAI:', err);
+    })
+    .finally(() => {
+      btn.disabled = false;
+      btn.textContent = '✨ Analizza con AI';
+    });
+}
+
+function showQuickPreview() {
+  if(!quickData) return;
+  const d = quickData;
+  const html = `<div style="background:var(--surface2);border:1px solid var(--accent);border-radius:8px;padding:16px;margin-top:12px;">
+    <div style="font-size:12px;color:var(--accent);margin-bottom:12px;font-weight:600;">📋 ANTEPRIMA</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;margin-bottom:12px;">
+      <div><span style="color:var(--muted);font-size:10px;">NOME</span><br><strong>${d.nome || '—'}</strong></div>
+      <div><span style="color:var(--muted);font-size:10px;">PRIORITA</span><br><strong>${d.priorita || '—'}</strong></div>
+      <div><span style="color:var(--muted);font-size:10px;">SCADENZA</span><br><strong>${d.scadenza || '—'}</strong></div>
+      <div><span style="color:var(--muted);font-size:10px;">ORE</span><br><strong>${d.ore || '—'}h</strong></div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="saveQuickProject()" style="margin-right:8px;">✓ Salva</button>
+    <button class="btn btn-ghost btn-sm" onclick="cancelQuickAdd()">✕ Annulla</button>
+  </div>`;
+  document.getElementById('quickPreview').innerHTML = html;
+}
+
+function saveQuickProject() {
+  if(!quickData) return;
+  const d = quickData;
+  projects.push({
+    id: 'p_' + Date.now(),
+    nome: d.nome,
+    descrizione: d.descrizione || '',
+    priorita: d.priorita || 'media',
+    scadenza: d.scadenza || '',
+    categoria: d.categoria || '',
+    ore: d.ore || '',
+    stato: 'attivo',
+    creato: new Date().toISOString()
+  });
+  save();
+  renderProjects();
+  document.getElementById('quickInput').value = '';
+  document.getElementById('quickPreview').innerHTML = '';
+  document.getElementById('quickStatus').textContent = '✓ Salvato!';
+  setTimeout(() => { document.getElementById('quickStatus').textContent = ''; }, 2000);
+}
+
+function cancelQuickAdd() {
+  document.getElementById('quickPreview').innerHTML = '';
+  quickData = null;
+}
+
+// ============================================================
+// IMPORT MARKDOWN
+// ============================================================
+let mdParsedProjects = [];
+let mdSelected = [];
+
+function loadMdFile(event) {
+  const file = event.target.files && event.target.files[0];
+  const statusEl = document.getElementById('mdStatus');
+  const nameEl = document.getElementById('mdFileName');
+  const inputEl = document.getElementById('mdInput');
+
+  if(!file) { statusEl.textContent = '❌ Nessun file selezionato'; return; }
+
+  const sizeKB = Math.round(file.size/1024*10)/10;
+  nameEl.textContent = file.name + ' (' + sizeKB + ' KB)';
+  statusEl.textContent = '⏳ Lettura file...';
+
+  if(file.size === 0) { statusEl.textContent = '❌ File vuoto'; return; }
+  if(file.size > 2 * 1024 * 1024) { statusEl.textContent = '❌ File troppo grande (max 2 MB)'; return; }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result || '';
+    inputEl.value = text;
+    statusEl.textContent = text.trim().length === 0
+      ? '⚠️ File caricato ma vuoto'
+      : '✓ File caricato (' + text.length + ' caratteri) — clicca "Estrai Progetti"';
+    event.target.value = '';
+  };
+  reader.onerror = function() {
+    statusEl.textContent = '❌ Errore lettura file: ' + (reader.error ? reader.error.name : 'sconosciuto');
+  };
+  try {
+    reader.readAsText(file, 'UTF-8');
+  } catch(err) {
+    statusEl.textContent = '❌ Errore: ' + err.message;
+  }
+}
+
+// FIX: event passato come parametro esplicito dall'onclick
+function parseMarkdownProjects(ev) {
+  const text = (document.getElementById('mdInput').value || '').trim();
+  const status = document.getElementById('mdStatus');
+
+  if(!text || text.length < 30) {
+    status.textContent = '❌ Contenuto troppo breve (min 30 caratteri)';
+    return;
+  }
+
+  const btn = ev.target;
+  btn.disabled = true;
+  btn.textContent = '⏳ Analisi in corso...';
+  status.textContent = 'L\'AI sta leggendo il documento...';
+  document.getElementById('mdPreview').innerHTML = '';
+
+  const oggi = new Date().toISOString().split('T')[0];
+  const prompt = `Sei un project manager esperto. Leggi questo documento Markdown ed estrai TUTTI i progetti che trovi.
+
+Per ogni progetto identifica e compila TUTTI questi campi:
+- nome: titolo del progetto (stringa, obbligatorio)
+- descrizione: descrizione breve di 1-2 frasi (stringa)
+- priorita: "alta" | "media" | "bassa"
+- scadenza: data in formato YYYY-MM-DD (lascia "" se non specificata)
+- categoria: tipo/area (es: "Dev", "Marketing", "Design", "Cliente", "Personale")
+- ore: numero stimato di ore di lavoro (intero)
+
+DOCUMENTO (oggi è ${oggi}):
+"""
+${text}
+"""
+
+Rispondi SOLO con JSON puro, NESSUN testo extra. Formato:
+{"progetti":[{"nome":"...","descrizione":"...","priorita":"alta","scadenza":"2026-06-30","categoria":"...","ore":40},...]}
+
+Se non trovi progetti: {"progetti":[]}`;
+
+  callLLM([{ role: 'user', content: prompt }], 4000)
+    .then(raw => {
+      const j1 = raw.indexOf('{');
+      const j2 = raw.lastIndexOf('}');
+      if(j1 < 0 || j2 < 0) throw new Error('JSON non trovato nella risposta');
+      const parsed = JSON.parse(raw.substring(j1, j2+1));
+      if(!parsed.progetti || !Array.isArray(parsed.progetti)) throw new Error('Formato risposta non valido');
+      if(parsed.progetti.length === 0) { status.textContent = '⚠️ Nessun progetto identificato'; return; }
+      mdParsedProjects = parsed.progetti;
+      mdSelected = parsed.progetti.map(() => true);
+      showMdPreview();
+      status.textContent = '✓ Trovati ' + parsed.progetti.length + ' progetti';
+    })
+    .catch(err => {
+      status.textContent = '❌ ' + err.message;
+      console.error('parseMarkdownProjects:', err);
+    })
+    .finally(() => {
+      btn.disabled = false;
+      btn.textContent = '🤖 Estrai Progetti';
+    });
+}
+
+function showMdPreview() {
+  if(!mdParsedProjects.length) return;
+  const colorMap = { alta: 'var(--accent2)', media: 'var(--accent)', bassa: 'var(--accent3)' };
+
+  const cards = mdParsedProjects.map((p, idx) => {
+    const col = colorMap[p.priorita] || 'var(--accent)';
+    const scad = p.scadenza ? new Date(p.scadenza).toLocaleDateString('it-IT') : '—';
+    return `<div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid ${col};border-radius:6px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;">
+      <input type="checkbox" id="mdchk_${idx}" ${mdSelected[idx]?'checked':''} onchange="toggleMdProject(${idx})" style="margin-top:4px;width:18px;height:18px;cursor:pointer;accent-color:var(--accent);">
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:800;font-size:14px;margin-bottom:6px;">${escapeHtml(p.nome || '(senza nome)')}</div>
+        ${p.descrizione ? `<div style="font-size:12px;color:var(--muted);margin-bottom:8px;">${escapeHtml(p.descrizione)}</div>` : ''}
+        <div style="display:flex;flex-wrap:wrap;gap:6px;font-family:'Space Mono',monospace;font-size:10px;">
+          <span style="background:${col};color:#000;padding:2px 8px;border-radius:4px;font-weight:700;">${(p.priorita||'media').toUpperCase()}</span>
+          <span style="background:var(--surface);border:1px solid var(--border);padding:2px 8px;border-radius:4px;color:var(--muted);">📅 ${scad}</span>
+          ${p.categoria ? `<span style="background:var(--surface);border:1px solid var(--border);padding:2px 8px;border-radius:4px;color:var(--muted);">${escapeHtml(p.categoria)}</span>` : ''}
+          ${p.ore ? `<span style="background:var(--surface);border:1px solid var(--border);padding:2px 8px;border-radius:4px;color:var(--muted);">⏱ ${p.ore}h</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const html = `<div style="margin-top:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <div style="font-family:'Space Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:2px;">📋 ANTEPRIMA — ${mdParsedProjects.length} PROGETTI</div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-ghost btn-sm" onclick="toggleAllMd(true)">Seleziona tutti</button>
+        <button class="btn btn-ghost btn-sm" onclick="toggleAllMd(false)">Deseleziona</button>
+      </div>
+    </div>
+    ${cards}
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+      <button class="btn btn-primary btn-sm" onclick="importSelectedMd()">✓ Importa Selezionati</button>
+      <button class="btn btn-ghost btn-sm" onclick="cancelMdImport()">✕ Annulla</button>
+    </div>
+  </div>`;
+  document.getElementById('mdPreview').innerHTML = html;
+}
+
+function toggleMdProject(idx) {
+  mdSelected[idx] = !mdSelected[idx];
+}
+
+function toggleAllMd(val) {
+  mdSelected = mdParsedProjects.map(() => val);
+  showMdPreview();
+}
+
+function importSelectedMd() {
+  const toImport = mdParsedProjects.filter((_, idx) => mdSelected[idx]);
+  if(toImport.length === 0) { document.getElementById('mdStatus').textContent = '⚠️ Nessun progetto selezionato'; return; }
+  toImport.forEach(d => {
+    projects.push({
+      id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+      nome: d.nome || 'Senza nome',
+      descrizione: d.descrizione || '',
+      priorita: ['alta','media','bassa'].includes(d.priorita) ? d.priorita : 'media',
+      scadenza: d.scadenza || '',
+      categoria: d.categoria || '',
+      ore: d.ore || '',
+      stato: 'attivo',
+      creato: new Date().toISOString()
+    });
+  });
+  save();
+  renderProjects();
+  cancelMdImport();
+  document.getElementById('mdStatus').textContent = '✅ Importati ' + toImport.length + ' progetti!';
+  setTimeout(() => { document.getElementById('mdStatus').textContent = ''; }, 4000);
+}
+
+function cancelMdImport() {
+  document.getElementById('mdPreview').innerHTML = '';
+  document.getElementById('mdInput').value = '';
+  document.getElementById('mdFileInput').value = '';
+  document.getElementById('mdFileName').textContent = 'nessun file caricato';
+  mdParsedProjects = [];
+  mdSelected = [];
+}
+
+function escapeHtml(s) {
+  if(s === null || s === undefined) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,91 @@
+name: Build APK
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  build:
+    name: Build WAR ROOM APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── Node / pnpm ──────────────────────────────────────────────────
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ── Java (Android build) ─────────────────────────────────────────
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # ── Android SDK ──────────────────────────────────────────────────
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      # ── Capacitor packages (installati localmente senza toccare lock) ─
+      - name: Install Capacitor
+        run: |
+          npm install --no-save \
+            @capacitor/core@latest \
+            @capacitor/cli@latest \
+            @capacitor/android@latest
+
+      # ── Genera la piattaforma Android (android/ è escluso dal repo) ──
+      - name: Add Android platform
+        run: npx cap add android
+
+      # ── Sincronizza warroom-app/ → android/app/src/main/assets/public ─
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      # ── Gradle cache ─────────────────────────────────────────────────
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      # ── Build APK debug ──────────────────────────────────────────────
+      - name: Build debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      # ── Upload artefatto ─────────────────────────────────────────────
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: warroom-debug-${{ github.sha }}
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      # ── Info finale ──────────────────────────────────────────────────
+      - name: APK info
+        run: |
+          APK=android/app/build/outputs/apk/debug/app-debug.apk
+          SIZE=$(du -sh "$APK" | cut -f1)
+          echo "✅ APK generato: $SIZE"
+          echo "📦 Artefatto: warroom-debug-${{ github.sha }}"
