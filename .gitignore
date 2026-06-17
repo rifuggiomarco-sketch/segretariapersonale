@@ -114,3 +114,7 @@ client/public/__manus__/version.json
 
 # Project configuration with secrets
 .project-config.json
+
+# Capacitor — directory Android generata in CI, non committare
+android/
+.capacitor/
