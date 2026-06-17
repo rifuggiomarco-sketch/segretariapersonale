@@ -16,15 +16,14 @@ jobs:
         uses: actions/checkout@v4
 
       # ── Node / pnpm ──────────────────────────────────────────────────
+      # Niente "version:" — pnpm/action-setup@v4 legge packageManager da package.json
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - name: Install dependencies
