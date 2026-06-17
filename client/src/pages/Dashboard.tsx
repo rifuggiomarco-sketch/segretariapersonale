@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,22 @@ export default function Dashboard() {
   const { data: googleStatus, refetch: refetchGoogleStatus } = trpc.google.isConnected.useQuery(undefined, {
     enabled: !!user,
   });
+
+  // Handle OAuth popup callback: detect ?google=connected in URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("google") === "connected") {
+      if (window.opener) {
+        // We're inside the popup — notify the opener and close
+        window.opener.postMessage({ type: "google-oauth-success" }, window.location.origin);
+        window.close();
+      } else {
+        // Direct navigation (not a popup) — just update status and clean URL
+        refetchGoogleStatus();
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+    }
+  }, [refetchGoogleStatus]);
 
   // Queries
   const { data: currentBriefing, isLoading: briefingLoading, refetch: refetchCurrent } = trpc.briefing.getCurrent.useQuery(undefined, {
@@ -59,35 +75,42 @@ export default function Dashboard() {
         throw new Error("Failed to get Google auth URL");
       }
       const { authUrl } = result.data;
-      // Apri la finestra di Google OAuth
+
       const width = 500;
       const height = 600;
       const left = window.screenX + (window.outerWidth - width) / 2;
       const top = window.screenY + (window.outerHeight - height) / 2;
-      
+
       const popup = window.open(
         authUrl,
         "Google OAuth",
         `width=${width},height=${height},left=${left},top=${top}`
       );
 
-      // Ascolta il messaggio dal popup
+      if (!popup) {
+        toast.error("Popup bloccato dal browser. Abilita i popup per connettere Google.");
+        return;
+      }
+
+      let timeoutId: ReturnType<typeof setTimeout>;
+
       const handleMessage = (event: MessageEvent) => {
-        if (event.data.type === "google-oauth-success") {
+        if (event.origin !== window.location.origin) return;
+        if (event.data?.type === "google-oauth-success") {
           setGoogleConnected(true);
           toast.success("Google connesso con successo!");
           refetchGoogleStatus();
           window.removeEventListener("message", handleMessage);
+          clearTimeout(timeoutId);
         }
       };
 
       window.addEventListener("message", handleMessage);
 
-      // Chiudi il popup dopo 5 minuti se ancora aperto
-      setTimeout(() => {
-        if (popup && !popup.closed) {
-          popup.close();
-        }
+      // Auto-close popup and clean up listener after 5 minutes
+      timeoutId = setTimeout(() => {
+        if (!popup.closed) popup.close();
+        window.removeEventListener("message", handleMessage);
       }, 5 * 60 * 1000);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Errore nella connessione a Google";

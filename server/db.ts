@@ -104,6 +104,12 @@ export async function upsertGoogleToken(userId: number, token: Omit<InsertGoogle
   });
 }
 
+export async function deleteGoogleToken(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(googleTokens).where(eq(googleTokens.userId, userId));
+}
+
 export async function getRecentEmails(userId: number, days: number = 7) {
   const db = await getDb();
   if (!db) return [];
