@@ -50,8 +50,7 @@ export const googleRouter = router({
    * Disconnect Google account
    */
   disconnect: protectedProcedure.mutation(async ({ ctx }) => {
-    // In a real app, you'd delete the token from the database
-    // For now, we'll just return success
+    await db.deleteGoogleToken(ctx.user.id);
     return { success: true };
   }),
 });
