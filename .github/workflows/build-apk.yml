@@ -40,14 +40,6 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # ── Capacitor packages (installati localmente senza toccare lock) ─
-      - name: Install Capacitor
-        run: |
-          npm install --no-save \
-            @capacitor/core@latest \
-            @capacitor/cli@latest \
-            @capacitor/android@latest
-
       # ── Genera la piattaforma Android (android/ è escluso dal repo) ──
       - name: Add Android platform
         run: npx cap add android
