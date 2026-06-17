@@ -11,6 +11,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { handleDailyBriefing } from "../scheduled";
+import { invokeLLM } from "./llm";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -42,6 +43,21 @@ async function startServer() {
   registerGoogleOAuthCallback(app);
 
   // Google OAuth endpoints are registered via tRPC router
+
+  // WAR ROOM — LLM proxy (avoids browser CORS + API key exposure)
+  app.post("/api/warroom/llm", async (req, res) => {
+    try {
+      const { messages, max_tokens } = req.body;
+      const result = await invokeLLM({ messages, maxTokens: max_tokens || 1000 });
+      const text = typeof result.choices[0]?.message?.content === "string"
+        ? result.choices[0].message.content
+        : "";
+      res.json({ content: [{ type: "text", text }] });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      res.status(500).json({ error: msg });
+    }
+  });
 
   // Scheduled tasks
   app.post("/api/scheduled/daily-briefing", handleDailyBriefing);
