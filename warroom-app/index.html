@@ -479,8 +479,13 @@
           <label>ORE FAMIGLIA (settimanali)</label>
           <input type="number" id="oreFamiglia" value="15" min="0" max="40">
         </div>
-        <div class="form-group" id="apiKeyGroup">
-          <label>ANTHROPIC API KEY</label>
+        <div class="form-group">
+          <label>URL SERVER (gratis — consigliato)</label>
+          <input type="url" id="serverUrlInput" placeholder="https://tuo-sito.manus.space" autocomplete="off">
+          <small style="color:#aaa;font-size:11px;letter-spacing:0;display:block;margin-top:4px;">Apri l'app dal browser e copia l'URL dalla barra degli indirizzi</small>
+        </div>
+        <div class="form-group">
+          <label>ANTHROPIC API KEY (fallback a pagamento)</label>
           <input type="password" id="anthropicKey" placeholder="sk-ant-..." autocomplete="off">
         </div>
         <button class="btn btn-primary" onclick="saveSettings()">Salva Impostazioni</button>
@@ -551,11 +556,28 @@ function save() {
 }
 
 // ============================================================
-// LLM — usa API key Anthropic se salvata, altrimenti proxy server
+// LLM — server URL (gratis via Forge/Gemini) > Anthropic key > errore
 // ============================================================
 async function callLLM(messages, maxTokens) {
+  const isNative = !!(window.Capacitor?.isNativePlatform?.());
+  const serverUrl = (localStorage.getItem('cc_server_url') || '').replace(/\/$/, '');
   const apiKey = localStorage.getItem('cc_anthropic_key') || '';
-  if (apiKey) {
+
+  if (isNative && serverUrl) {
+    const res = await fetch(`${serverUrl}/api/warroom/llm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages, max_tokens: maxTokens || 1000 })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    return data.content?.map(c => c.text || '').join('') || '';
+  }
+
+  if (isNative && apiKey) {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -573,6 +595,9 @@ async function callLLM(messages, maxTokens) {
     const data = await res.json();
     return data.content?.map(c => c.text || '').join('') || '';
   }
+
+  if (isNative) throw new Error('Imposta l\'URL del server nelle Impostazioni');
+
   const res = await fetch('/api/warroom/llm', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -946,6 +971,8 @@ function saveSettings() {
   settings.oreGiorno = parseInt(document.getElementById('oreGiorno').value)||8;
   settings.oreFamiglia = parseInt(document.getElementById('oreFamiglia').value)||0;
   settings.giorni = [1,2,3,4,5,6,7].filter((_,i)=>document.getElementById('d'+(i+1)).checked);
+  const u = document.getElementById('serverUrlInput').value.trim();
+  if (u) localStorage.setItem('cc_server_url', u);
   const k = document.getElementById('anthropicKey').value.trim();
   if (k) localStorage.setItem('cc_anthropic_key', k);
   save(); alert('Salvato!'); renderCapacita();
@@ -973,6 +1000,7 @@ function renderCapacita() {
   document.getElementById('oreGiorno').value = settings.oreGiorno;
   document.getElementById('oreFamiglia').value = settings.oreFamiglia;
   [1,2,3,4,5,6,7].forEach((d,i)=>{ document.getElementById('d'+(i+1)).checked = settings.giorni.includes(d); });
+  document.getElementById('serverUrlInput').value = localStorage.getItem('cc_server_url') || '';
   const k = localStorage.getItem('cc_anthropic_key') || '';
   document.getElementById('anthropicKey').value = k ? '••••••••' : '';
 }
