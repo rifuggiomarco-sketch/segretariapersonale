@@ -560,7 +560,7 @@ function save() {
 // ============================================================
 async function callLLM(messages, maxTokens) {
   const isNative = !!(window.Capacitor?.isNativePlatform?.());
-  const serverUrl = (localStorage.getItem('cc_server_url') || '').replace(/\/$/, '');
+  const serverUrl = (localStorage.getItem('cc_server_url') || 'https://segretaria-dfrxhwzr.manus.space').replace(/\/$/, '');
   const apiKey = localStorage.getItem('cc_anthropic_key') || '';
 
   if (isNative && serverUrl) {
@@ -1000,7 +1000,7 @@ function renderCapacita() {
   document.getElementById('oreGiorno').value = settings.oreGiorno;
   document.getElementById('oreFamiglia').value = settings.oreFamiglia;
   [1,2,3,4,5,6,7].forEach((d,i)=>{ document.getElementById('d'+(i+1)).checked = settings.giorni.includes(d); });
-  document.getElementById('serverUrlInput').value = localStorage.getItem('cc_server_url') || '';
+  document.getElementById('serverUrlInput').value = localStorage.getItem('cc_server_url') || 'https://segretaria-dfrxhwzr.manus.space';
   const k = localStorage.getItem('cc_anthropic_key') || '';
   document.getElementById('anthropicKey').value = k ? '••••••••' : '';
 }
