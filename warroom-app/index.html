@@ -480,13 +480,9 @@
           <input type="number" id="oreFamiglia" value="15" min="0" max="40">
         </div>
         <div class="form-group">
-          <label>URL SERVER (gratis — consigliato)</label>
-          <input type="url" id="serverUrlInput" placeholder="https://tuo-sito.manus.space" autocomplete="off">
-          <small style="color:#aaa;font-size:11px;letter-spacing:0;display:block;margin-top:4px;">Apri l'app dal browser e copia l'URL dalla barra degli indirizzi</small>
-        </div>
-        <div class="form-group">
-          <label>ANTHROPIC API KEY (fallback a pagamento)</label>
-          <input type="password" id="anthropicKey" placeholder="sk-ant-..." autocomplete="off">
+          <label>GOOGLE GEMINI API KEY (gratuita)</label>
+          <input type="password" id="geminiKey" placeholder="AIza..." autocomplete="off">
+          <small style="color:#aaa;font-size:11px;letter-spacing:0;display:block;margin-top:4px;">Ottienila gratis su aistudio.google.com → Get API key</small>
         </div>
         <button class="btn btn-primary" onclick="saveSettings()">Salva Impostazioni</button>
       </div>
@@ -556,47 +552,30 @@ function save() {
 }
 
 // ============================================================
-// LLM — server URL (gratis via Forge/Gemini) > Anthropic key > errore
+// LLM — Gemini gratuito (APK) oppure proxy server (browser)
 // ============================================================
 async function callLLM(messages, maxTokens) {
   const isNative = !!(window.Capacitor?.isNativePlatform?.());
-  const serverUrl = (localStorage.getItem('cc_server_url') || 'https://segretaria-dfrxhwzr.manus.space').replace(/\/$/, '');
-  const apiKey = localStorage.getItem('cc_anthropic_key') || '';
 
-  if (isNative && serverUrl) {
-    const res = await fetch(`${serverUrl}/api/warroom/llm`, {
+  if (isNative) {
+    const geminiKey = localStorage.getItem('cc_gemini_key') || '';
+    if (!geminiKey) throw new Error('Imposta la tua Google Gemini API Key nelle Impostazioni (gratuita su aistudio.google.com)');
+    const contents = messages.map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }]
+    }));
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, max_tokens: maxTokens || 1000 })
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || `HTTP ${res.status}`);
-    }
-    const data = await res.json();
-    return data.content?.map(c => c.text || '').join('') || '';
-  }
-
-  if (isNative && apiKey) {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', messages, max_tokens: maxTokens || 1000 })
+      body: JSON.stringify({ contents, generationConfig: { maxOutputTokens: maxTokens || 1000 } })
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error?.message || `HTTP ${res.status}`);
     }
     const data = await res.json();
-    return data.content?.map(c => c.text || '').join('') || '';
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
   }
-
-  if (isNative) throw new Error('Imposta l\'URL del server nelle Impostazioni');
 
   const res = await fetch('/api/warroom/llm', {
     method: 'POST',
@@ -971,10 +950,8 @@ function saveSettings() {
   settings.oreGiorno = parseInt(document.getElementById('oreGiorno').value)||8;
   settings.oreFamiglia = parseInt(document.getElementById('oreFamiglia').value)||0;
   settings.giorni = [1,2,3,4,5,6,7].filter((_,i)=>document.getElementById('d'+(i+1)).checked);
-  const u = document.getElementById('serverUrlInput').value.trim();
-  if (u) localStorage.setItem('cc_server_url', u);
-  const k = document.getElementById('anthropicKey').value.trim();
-  if (k) localStorage.setItem('cc_anthropic_key', k);
+  const g = document.getElementById('geminiKey').value.trim();
+  if (g) localStorage.setItem('cc_gemini_key', g);
   save(); alert('Salvato!'); renderCapacita();
 }
 
@@ -1000,9 +977,8 @@ function renderCapacita() {
   document.getElementById('oreGiorno').value = settings.oreGiorno;
   document.getElementById('oreFamiglia').value = settings.oreFamiglia;
   [1,2,3,4,5,6,7].forEach((d,i)=>{ document.getElementById('d'+(i+1)).checked = settings.giorni.includes(d); });
-  document.getElementById('serverUrlInput').value = localStorage.getItem('cc_server_url') || 'https://segretaria-dfrxhwzr.manus.space';
-  const k = localStorage.getItem('cc_anthropic_key') || '';
-  document.getElementById('anthropicKey').value = k ? '••••••••' : '';
+  const g = localStorage.getItem('cc_gemini_key') || '';
+  document.getElementById('geminiKey').value = g ? '••••••••' : '';
 }
 
 // ============================================================
