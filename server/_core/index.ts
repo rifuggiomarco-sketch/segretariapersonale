@@ -45,7 +45,14 @@ async function startServer() {
   // Google OAuth endpoints are registered via tRPC router
 
   // WAR ROOM — LLM proxy (avoids browser CORS + API key exposure)
+  app.options("/api/warroom/llm", (_req, res) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.sendStatus(204);
+  });
   app.post("/api/warroom/llm", async (req, res) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
     try {
       const { messages, max_tokens } = req.body;
       const result = await invokeLLM({ messages, maxTokens: max_tokens || 1000 });
