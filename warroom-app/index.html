@@ -554,7 +554,8 @@ function save() {
 // ============================================================
 // LLM — Gemini gratuito (APK) oppure proxy server (browser)
 // ============================================================
-async function callLLM(messages, maxTokens) {
+async function callLLM(messages, maxTokens, _retry) {
+  const retry = _retry || 0;
   const isNative = !!(window.Capacitor?.isNativePlatform?.());
 
   if (isNative) {
@@ -571,7 +572,29 @@ async function callLLM(messages, maxTokens) {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error?.message || `HTTP ${res.status}`);
+      const errMsg = err.error?.message || `HTTP ${res.status}`;
+      if (res.status === 429 && retry < 3) {
+        const m = errMsg.match(/retry in (\d+(?:\.\d+)?)s/i);
+        const wait = m ? Math.ceil(parseFloat(m[1])) + 2 : 20;
+        const aiContent = document.querySelector('.ai-content');
+        if (aiContent) {
+          let t = wait;
+          const iv = setInterval(() => {
+            const el = document.querySelector('.ai-content');
+            if (!el) { clearInterval(iv); return; }
+            el.textContent = `Limite raggiunto — riprovo tra ${t}s...`;
+            if (--t < 0) clearInterval(iv);
+          }, 1000);
+          await new Promise(r => setTimeout(r, wait * 1000));
+          clearInterval(iv);
+          const el = document.querySelector('.ai-content');
+          if (el) el.innerHTML = '<span class="loading-dots">Elaborazione</span>';
+        } else {
+          await new Promise(r => setTimeout(r, wait * 1000));
+        }
+        return callLLM(messages, maxTokens, retry + 1);
+      }
+      throw new Error(errMsg);
     }
     const data = await res.json();
     return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
